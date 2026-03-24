@@ -24,8 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _data;
   bool _isLoading = false;
 
-  // ⚠️ Change to your laptop's local IP when testing on phone
-  final String backendUrl = "http://127.0.0.1:8000/analyze";
+  // ⚠️ Backend URL - make sure backend is running before scanning
+  final String backendUrl = "http://192.168.100.163:8000/analyze";
   String get baseUrl => backendUrl.replaceAll('/analyze', '');
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
