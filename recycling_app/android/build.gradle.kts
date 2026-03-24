@@ -22,17 +22,3 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
-
-plugins {
-  id("com.android.application")
-  id("kotlin-android")
-  id("dev.flutter.flutter-gradle-plugin")
-  // ADD this line:
-  id("com.google.gms.google-services")
-}
-
-dependencies {
-  // ADD these lines:
-  implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
-  implementation("com.google.firebase:firebase-analytics")
-}
