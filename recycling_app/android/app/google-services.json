@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "688835170856",
+    "project_id": "ecoscan-5cd4a",
+    "storage_bucket": "ecoscan-5cd4a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:688835170856:android:5c740cd6516a3f79ccdb1d",
+        "android_client_info": {
+          "package_name": "com.example.recycling_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "688835170856-3tmhk2ffk9s0orvepmjclkdieqntgkv1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDILHMPy0-bB5VonY5aPzT-Gvc21iG90iw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "688835170856-3tmhk2ffk9s0orvepmjclkdieqntgkv1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
