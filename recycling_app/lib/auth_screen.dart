@@ -88,8 +88,10 @@ class _AuthScreenState extends State<AuthScreen>
       if (cred.additionalUserInfo?.isNewUser == true) {
         await _createUserDoc(cred.user!, cred.user!.displayName ?? "EcoWarrior");
       }
+    } on FirebaseAuthException catch (e) {
+      _showError("Google sign-in failed: ${_friendlyError(e.code)} (${e.code})");
     } catch (e) {
-      _showError("Google sign-in failed. Try again.");
+      _showError("Google sign-in failed. Check Firebase Google provider and SHA-1 settings.");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -126,6 +128,24 @@ class _AuthScreenState extends State<AuthScreen>
     setState(() => _isLogin = !_isLogin);
     _animController.reset();
     _animController.forward();
+  }
+
+  Future<void> _continueAsGuest() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.signInAnonymously();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'operation-not-allowed') {
+        _showError('Guest sign-in is disabled in Firebase Console.');
+      } else {
+        _showError(_friendlyError(e.code));
+      }
+    } catch (_) {
+      _showError('Could not continue as guest. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   // ─── UI ─────────────────────────────────────
@@ -327,9 +347,7 @@ class _AuthScreenState extends State<AuthScreen>
 
                 // Skip for now
                 TextButton(
-                  onPressed: () {
-                    FirebaseAuth.instance.signInAnonymously();
-                  },
+                  onPressed: _isLoading ? null : _continueAsGuest,
                   child: const Text("Continue as guest",
                       style: TextStyle(color: Colors.white70, fontSize: 13)),
                 ),

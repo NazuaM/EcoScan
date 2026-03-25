@@ -42,21 +42,82 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   String get baseUrl => widget.backendUrl.replaceAll('/analyze', '');
 
-  String _getInspirationImageUrl(String query) {
-    final cleaned = query
+  String _cleanPrompt(String value) {
+    return value
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty)
-        .take(4)
-        .join(',');
-    final tags = cleaned.isEmpty ? 'upcycle,diy,craft' : cleaned;
-    return "https://loremflickr.com/900/500/$tags?lock=${tags.hashCode.abs()}";
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
-  String _getBackupImageUrl(String seed) {
-    final value = Uri.encodeComponent(seed.isEmpty ? 'upcycle-diy' : seed);
-    return "https://picsum.photos/seed/$value/900/500";
+  String _getInspirationImageUrl() {
+    final title = _cleanPrompt((_tutorial?['project_title'] ?? widget.itemName).toString());
+    final material = _cleanPrompt(widget.material);
+    final prompt = Uri.encodeComponent(
+      'high quality diy upcycling project photo, $title, made from $material, workshop table, realistic, clean lighting, no animals, no people, no text',
+    );
+    return 'https://image.pollinations.ai/prompt/$prompt?width=1200&height=700&nologo=true&seed=42';
+  }
+
+  String _inspirationEmojiForMaterial() {
+    final m = widget.material.toLowerCase();
+    if (m.contains('plastic')) return '🧴';
+    if (m.contains('glass')) return '🍾';
+    if (m.contains('paper') || m.contains('cardboard')) return '📦';
+    if (m.contains('metal')) return '🥫';
+    if (m.contains('wood')) return '🪵';
+    if (m.contains('fabric') || m.contains('textile')) return '🧵';
+    if (m.contains('electronic')) return '🔌';
+    return '🛠️';
+  }
+
+  Widget _buildInspirationFallback() {
+    final title = (_tutorial?['project_title'] ?? widget.itemName).toString();
+    final subtitle = '${widget.material} • DIY upcycle idea';
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE0B2), Color(0xFFFFCC80), Color(0xFFFFB74D)],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🛠️♻️', style: TextStyle(fontSize: 42)),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4E342E),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6D4C41),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${_inspirationEmojiForMaterial()}  ♻️  ${_inspirationEmojiForMaterial()}',
+                style: const TextStyle(fontSize: 20),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _generateTutorial() async {
@@ -235,9 +296,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         fit: StackFit.expand,
                         children: [
                           Image.network(
-                            _getInspirationImageUrl(
-                              "${_tutorial!['project_title'] ?? widget.itemName} upcycled craft DIY",
-                            ),
+                            _getInspirationImageUrl(),
                             fit: BoxFit.cover,
                             loadingBuilder: (ctx, child, progress) {
                               if (progress == null) return child;
@@ -251,30 +310,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                                 ),
                               );
                             },
-                            errorBuilder: (ctx, e, st) => Image.network(
-                              _getBackupImageUrl(
-                                (_tutorial!['project_title'] ?? widget.itemName).toString(),
-                              ),
-                              fit: BoxFit.cover,
-                              errorBuilder: (ctx2, e2, st2) => Container(
-                                color: Colors.orange[50],
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text("🛠️", style: TextStyle(fontSize: 36)),
-                                      Text(
-                                        "Project: ${_tutorial!['project_title'] ?? ''}",
-                                        style: TextStyle(
-                                          color: Colors.orange[800],
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
+                            errorBuilder: (ctx, e, st) => _buildInspirationFallback(),
                           ),
                           DecoratedBox(
                             decoration: BoxDecoration(
@@ -282,8 +318,8 @@ class _TutorialScreenState extends State<TutorialScreen> {
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  Colors.black.withOpacity(0.15),
-                                  Colors.black.withOpacity(0.45),
+                                  Colors.black.withOpacity(0.10),
+                                  Colors.black.withOpacity(0.40),
                                 ],
                               ),
                             ),
@@ -292,47 +328,14 @@ class _TutorialScreenState extends State<TutorialScreen> {
                             left: 12,
                             right: 12,
                             bottom: 12,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  (_tutorial!['project_title'] ?? widget.itemName).toString(),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "Visual reference only • not an exact final result",
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Positioned(
-                            right: 10,
-                            top: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                "Visual reference",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            child: Text(
+                              (_tutorial!['project_title'] ?? widget.itemName).toString(),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
                           ),

@@ -353,28 +353,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── RECYCLING CENTERS ───────────────────────
   Future<void> _showLocations() async {
-    LocationPermission permission =
-        await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
-    }
-    Position position = await Geolocator.getCurrentPosition();
-    if (position.latitude == 0 && position.longitude == 0) {
-      _showError("Could not detect location.");
-      return;
-    }
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showError("Location service is OFF. Please enable GPS.");
+        return;
+      }
 
-    String category =
+      LocationPermission permission =
+          await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied) {
+        _showError("Location permission denied.");
+        return;
+      }
+      if (permission == LocationPermission.deniedForever) {
+        _showError("Location permission is permanently denied. Enable it in app settings.");
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 10),
+      );
+      if (position.latitude == 0 && position.longitude == 0) {
+        _showError("Could not detect location.");
+        return;
+      }
+
+      String category =
         safeValue('material_category').toLowerCase();
-    String rawMaterial = safeValue('material').toLowerCase();
-    String itemName = safeValue('item_name').toLowerCase();
+      String rawMaterial = safeValue('material').toLowerCase();
+      String itemName = safeValue('item_name').toLowerCase();
 
-    String jsonString = await rootBundle
+      String jsonString = await rootBundle
         .loadString('assets/uae_recycling_centers.json');
-    List<dynamic> allCenters = json.decode(jsonString);
+      List<dynamic> allCenters = json.decode(jsonString);
 
-    final Map<String, List<String>> kwMap = {
+      final Map<String, List<String>> kwMap = {
       'metal': ['metal', 'aluminum', 'steel', 'tin', 'copper', 'iron', 'scrap', 'can', 'cans', 'metallic'],
       'plastic': ['plastic', 'bottle', 'bottles', 'pvc', 'jug', 'pet', 'foam', 'bags'],
       'paper': ['paper', 'cardboard', 'carton', 'newspaper', 'books'],
@@ -389,58 +407,61 @@ class _HomeScreenState extends State<HomeScreen> {
       'other': ['general recyclables', 'plastic', 'paper', 'metal'],
     };
 
-    List<String> terms = [category, rawMaterial];
-    for (var e in kwMap.entries) {
-      if (category.contains(e.key) ||
-          rawMaterial.contains(e.key)) {
-        terms.addAll(e.value);
+      List<String> terms = [category, rawMaterial];
+      for (var e in kwMap.entries) {
+        if (category.contains(e.key) ||
+            rawMaterial.contains(e.key)) {
+          terms.addAll(e.value);
+        }
       }
-    }
-    terms.addAll(rawMaterial.split(' '));
-    terms.addAll(itemName.split(' '));
-    terms = terms
-        .map((t) => t.trim().toLowerCase())
-        .where((t) => t.length > 2)
-        .toList();
+      terms.addAll(rawMaterial.split(' '));
+      terms.addAll(itemName.split(' '));
+      terms = terms
+          .map((t) => t.trim().toLowerCase())
+          .where((t) => t.length > 2)
+          .toList();
 
-    List<Map<String, dynamic>> validCenters = [];
-    for (var center in allCenters) {
-      List<dynamic> mats = center['materials'];
-      bool accepts = mats.any((m) {
-        final cm = m.toString().toLowerCase();
-        return terms
-            .any((t) => cm.contains(t) || t.contains(cm));
-      });
-      if (!accepts) {
-        accepts = mats.any((m) =>
-            m.toString().toLowerCase().contains('general'));
-      }
-      if (!accepts) continue;
-
-      final double lat = (center['lat'] as num).toDouble();
-      final double lon = (center['lon'] as num).toDouble();
-      if (lat < 22 || lat > 27 || lon < 51 || lon > 57) continue;
-
-      double dist = _haversine(
-          position.latitude, position.longitude, lat, lon);
-      if (dist <= 50) {
-        validCenters.add({
-          "name": center['name'],
-          "city": center['city'],
-          "type": center['type'] ?? "Recycling Center",
-          "access": center['access'],
-          "dist": dist,
-          "url": center['url'] ?? "",
+      List<Map<String, dynamic>> validCenters = [];
+      for (var center in allCenters) {
+        List<dynamic> mats = center['materials'];
+        bool accepts = mats.any((m) {
+          final cm = m.toString().toLowerCase();
+          return terms
+              .any((t) => cm.contains(t) || t.contains(cm));
         });
-      }
-    }
+        if (!accepts) {
+          accepts = mats.any((m) =>
+              m.toString().toLowerCase().contains('general'));
+        }
+        if (!accepts) continue;
 
-    validCenters
-        .sort((a, b) => a['dist'].compareTo(b['dist']));
-    if (validCenters.length > 5) {
-      validCenters = validCenters.sublist(0, 5);
+        final double lat = (center['lat'] as num).toDouble();
+        final double lon = (center['lon'] as num).toDouble();
+        if (lat < 22 || lat > 27 || lon < 51 || lon > 57) continue;
+
+        double dist = _haversine(
+            position.latitude, position.longitude, lat, lon);
+        if (dist <= 50) {
+          validCenters.add({
+            "name": center['name'],
+            "city": center['city'],
+            "type": center['type'] ?? "Recycling Center",
+            "access": center['access'],
+            "dist": dist,
+            "url": center['url'] ?? "",
+          });
+        }
+      }
+
+      validCenters
+          .sort((a, b) => a['dist'].compareTo(b['dist']));
+      if (validCenters.length > 5) {
+        validCenters = validCenters.sublist(0, 5);
+      }
+      _showCentersSheet(validCenters, rawMaterial);
+    } catch (e) {
+      _showError("Unable to fetch nearby centers. $e");
     }
-    _showCentersSheet(validCenters, rawMaterial);
   }
 
   double _haversine(
