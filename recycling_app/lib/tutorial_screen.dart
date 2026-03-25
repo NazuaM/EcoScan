@@ -42,23 +42,6 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   String get baseUrl => widget.backendUrl.replaceAll('/analyze', '');
 
-  String _cleanPrompt(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-  }
-
-  String _getInspirationImageUrl() {
-    final title = _cleanPrompt((_tutorial?['project_title'] ?? widget.itemName).toString());
-    final material = _cleanPrompt(widget.material);
-    final prompt = Uri.encodeComponent(
-      'high quality diy upcycling project photo, $title, made from $material, workshop table, realistic, clean lighting, no animals, no people, no text',
-    );
-    return 'https://image.pollinations.ai/prompt/$prompt?width=1200&height=700&nologo=true&seed=42';
-  }
-
   String _inspirationEmojiForMaterial() {
     final m = widget.material.toLowerCase();
     if (m.contains('plastic')) return '🧴';
@@ -295,31 +278,15 @@ class _TutorialScreenState extends State<TutorialScreen> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image.network(
-                            _getInspirationImageUrl(),
-                            fit: BoxFit.cover,
-                            loadingBuilder: (ctx, child, progress) {
-                              if (progress == null) return child;
-                              return Container(
-                                color: Colors.orange[50],
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.orange[700],
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (ctx, e, st) => _buildInspirationFallback(),
-                          ),
+                          _buildInspirationFallback(),
                           DecoratedBox(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  Colors.black.withOpacity(0.10),
-                                  Colors.black.withOpacity(0.40),
+                                  Colors.black.withOpacity(0.15),
+                                  Colors.black.withOpacity(0.45),
                                 ],
                               ),
                             ),
@@ -328,14 +295,47 @@ class _TutorialScreenState extends State<TutorialScreen> {
                             left: 12,
                             right: 12,
                             bottom: 12,
-                            child: Text(
-                              (_tutorial!['project_title'] ?? widget.itemName).toString(),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  (_tutorial!['project_title'] ?? widget.itemName).toString(),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Visual reference only • not an exact final result",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            right: 10,
+                            top: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                "Visual reference",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
