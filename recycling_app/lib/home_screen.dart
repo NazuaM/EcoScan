@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,8 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _data;
   bool _isLoading = false;
 
-  // ⚠️ Backend URL - make sure backend is running before scanning
-  final String backendUrl = "http://192.168.100.163:8000/analyze";
+  // Local backend for desktop/laptop runs
+  final String backendUrl = "http://127.0.0.1:8000/analyze";
   String get baseUrl => backendUrl.replaceAll('/analyze', '');
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Color get resultColor =>
       isRecyclable ? const Color(0xFF2E7D32) : Colors.red[700]!;
 
-  // ── FIRESTORE POINTS ────────────────────────
+  // â”€â”€ FIRESTORE POINTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _addPoints(int pts, String reason) async {
     if (isGuest) return;
     final ref = FirebaseFirestore.instance
@@ -68,8 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Row(children: [
-          const Text("🌱 "),
-          Text("+$pts pts  •  $reason",
+          const Text("ðŸŒ± "),
+          Text("+$pts pts  â€¢  $reason",
               style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
         backgroundColor: const Color(0xFF2E7D32),
@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ── IMAGE PICKER ────────────────────────────
+  // â”€â”€ IMAGE PICKER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
@@ -170,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── UPLOAD ──────────────────────────────────
+  // â”€â”€ UPLOAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _uploadImage(XFile file) async {
     setState(() => _isLoading = true);
     try {
@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ── CONFIDENCE DIALOG ───────────────────────
+  // â”€â”€ CONFIDENCE DIALOG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _showConfirmationDialog() async {
     final materialOptions = [
       safeValue('material'),
@@ -317,7 +317,7 @@ class _HomeScreenState extends State<HomeScreen> {
         content: Text(msg), backgroundColor: Colors.red[700]));
   }
 
-  // ── NAVIGATION ──────────────────────────────
+  // â”€â”€ NAVIGATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _openTutorial() {
     Navigator.push(
         context,
@@ -328,7 +328,6 @@ class _HomeScreenState extends State<HomeScreen> {
             state: safeValue('state'),
             quality: safeValue('quality'),
             backendUrl: backendUrl,
-            unsplashUrl: 'https://api.unsplash.com/search/photos',
             onTutorialCompleted: () =>
                 _addPoints(20, "DIY tutorial completed!"),
           ),
@@ -351,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
-  // ── RECYCLING CENTERS ───────────────────────
+  // â”€â”€ RECYCLING CENTERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _showLocations() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -499,7 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("♻️ Nearby for $material",
+              Text("â™»ï¸ Nearby for $material",
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
               Text("${centers.length} center(s) within 50km",
@@ -559,7 +558,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                           ]),
                           subtitle: Text(
-                              "${c['type']} • ${(c['dist'] as double).toStringAsFixed(1)} km",
+                              "${c['type']} â€¢ ${(c['dist'] as double).toStringAsFixed(1)} km",
                               style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 12)),
@@ -580,7 +579,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── MAIN UI ─────────────────────────────────
+  // â”€â”€ MAIN UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -596,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
               titlePadding:
                   const EdgeInsets.fromLTRB(20, 0, 20, 16),
               title: Row(children: [
-                const Text("EcoScan ♻️",
+                const Text("EcoScan â™»ï¸",
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -622,7 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white24,
                               borderRadius:
                                   BorderRadius.circular(20)),
-                          child: Text("🌱 $score pts",
+                          child: Text("ðŸŒ± $score pts",
                               style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
@@ -640,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                           color: Colors.white24,
                           borderRadius: BorderRadius.circular(20)),
-                      child: const Text("👤 Guest",
+                      child: const Text("ðŸ‘¤ Guest",
                           style: TextStyle(
                               fontSize: 13,
                               color: Colors.white70)),
@@ -678,8 +677,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       BorderRadius.circular(20)),
                               child: Text(
                                   isRecyclable
-                                      ? "♻️ Recyclable"
-                                      : "🚫 Not Recyclable",
+                                      ? "â™»ï¸ Recyclable"
+                                      : "ðŸš« Not Recyclable",
                                   style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -762,8 +761,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           fontSize: 17)),
                                   Text(
                                       isRecyclable
-                                          ? "This item is recyclable ✅"
-                                          : "This item is not recyclable ❌",
+                                          ? "This item is recyclable âœ…"
+                                          : "This item is not recyclable âŒ",
                                       style: TextStyle(
                                           color: resultColor,
                                           fontSize: 13)),
@@ -773,15 +772,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(children: [
-                            _detailRow("🧪 Material",
+                            _detailRow("ðŸ§ª Material",
                                 safeValue('material')),
                             _detailRow(
-                                "📦 State", safeValue('state')),
+                                "ðŸ“¦ State", safeValue('state')),
                             _detailRow(
-                                "⭐ Quality", safeValue('quality')),
-                            _detailRow("🔢 Quantity",
+                                "â­ Quality", safeValue('quality')),
+                            _detailRow("ðŸ”¢ Quantity",
                                 safeValue('quantity')),
-                            _detailRow("🎯 Confidence",
+                            _detailRow("ðŸŽ¯ Confidence",
                                 safeValue('confidence')),
                             const SizedBox(height: 10),
                             Container(
@@ -926,7 +925,7 @@ class _HomeScreenState extends State<HomeScreen> {
             border: Border.all(
                 color: Colors.green.shade100, width: 2)),
         child: const Center(
-            child: Text("♻️", style: TextStyle(fontSize: 52))),
+            child: Text("â™»ï¸", style: TextStyle(fontSize: 52))),
       ),
       const SizedBox(height: 20),
       const Text("Ready to scan!",
@@ -945,10 +944,10 @@ class _HomeScreenState extends State<HomeScreen> {
           runSpacing: 8,
           alignment: WrapAlignment.center,
           children: [
-            _featurePill("🔍 AI Detection"),
-            _featurePill("🛠️ DIY Tutorials"),
-            _featurePill("🌿 Eco Swaps"),
-            _featurePill("📍 Find Centers"),
+            _featurePill("ðŸ” AI Detection"),
+            _featurePill("ðŸ› ï¸ DIY Tutorials"),
+            _featurePill("ðŸŒ¿ Eco Swaps"),
+            _featurePill("ðŸ“ Find Centers"),
           ]),
     ]);
   }

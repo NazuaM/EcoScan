@@ -1,8 +1,9 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,6 +18,11 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Keep running with compile-time defines or fallbacks when .env is absent.
+  }
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const EcoScanApp());
 }
@@ -247,7 +253,6 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
       state: "Used", 
       quality: "Good",
       backendUrl: "http://127.0.0.1:8000/analyze", // Your API base
-      unsplashUrl: "https://api.unsplash.com/search/photos", // Add this line!
     )));
   }
 
@@ -277,7 +282,7 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
     List<dynamic> allCenters = json.decode(jsonString);
     List<Map<String, dynamic>> validCenters = [];
 
-    // Expanded keyword map — this is the fix
+    // Expanded keyword map â€” this is the fix
     final Map<String, List<String>> materialKeywords = {
       'metal':         ['metal', 'aluminum', 'steel', 'tin', 'copper', 'iron', 'scrap', 'can', 'cans', 'metallic'],
       'plastic':       ['plastic', 'bottle', 'bottles', 'pvc', 'jug', 'pet', 'foam', 'bags'],
@@ -385,7 +390,7 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
                         child: const Text("24/7", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
                       ),
                     ]),
-                    subtitle: Text("${c['type']} • ${c['dist'].toStringAsFixed(1)} km"),
+                    subtitle: Text("${c['type']} â€¢ ${c['dist'].toStringAsFixed(1)} km"),
                     trailing: IconButton(icon: const Icon(Icons.directions, color: Colors.blue), onPressed: () => _launchMapUrl(c['url'])),
                     onTap: () => _launchMapUrl(c['url']),
                   );
@@ -403,7 +408,7 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("EcoScan ♻️", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("EcoScan â™»ï¸", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.green[700],
         foregroundColor: Colors.white,
         actions: [
@@ -412,7 +417,7 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
             child: Center(child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(20)),
-              child: Text("🌱 $_score pts", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              child: Text("ðŸŒ± $_score pts", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             )),
           ),
         ],
@@ -443,16 +448,16 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(isRecyclable ? Icons.check_circle : Icons.cancel, color: resultColor, size: 36),
                     const SizedBox(width: 10),
-                    Text(isRecyclable ? "Recyclable ✅" : "Not Recyclable ❌",
+                    Text(isRecyclable ? "Recyclable âœ…" : "Not Recyclable âŒ",
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: resultColor)),
                   ]),
                   const Divider(height: 24),
-                  _detailRow("🏷️ Item", safeValue('item_name')),
-                  _detailRow("🧪 Material", safeValue('material')),
-                  _detailRow("📦 State", safeValue('state')),
-                  _detailRow("⭐ Quality", safeValue('quality')),
-                  _detailRow("🔢 Quantity", safeValue('quantity')),
-                  _detailRow("🎯 Confidence", safeValue('confidence')),
+                  _detailRow("ðŸ·ï¸ Item", safeValue('item_name')),
+                  _detailRow("ðŸ§ª Material", safeValue('material')),
+                  _detailRow("ðŸ“¦ State", safeValue('state')),
+                  _detailRow("â­ Quality", safeValue('quality')),
+                  _detailRow("ðŸ”¢ Quantity", safeValue('quantity')),
+                  _detailRow("ðŸŽ¯ Confidence", safeValue('confidence')),
                   const SizedBox(height: 10),
                   Container(
                     width: double.infinity, padding: const EdgeInsets.all(12),
@@ -543,3 +548,4 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
     );
   }
 }
+

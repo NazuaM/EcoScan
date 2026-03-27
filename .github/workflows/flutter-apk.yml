@@ -41,8 +41,18 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
+      - name: Extract APK certificate fingerprint
+        run: |
+          keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | tee apk-cert.txt
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: recycling_app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload APK certificate info
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-cert-info
+          path: recycling_app/apk-cert.txt

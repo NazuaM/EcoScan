@@ -1,6 +1,7 @@
 import os
 import base64
 import json
+import time
 import uvicorn
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +10,9 @@ from groq import Groq
 from dotenv import load_dotenv
 
 # 1. Load Environment Variables
-load_dotenv()
+# Prefer a dedicated backend env file, then fallback to root .env.
+load_dotenv(".env.backend")
+load_dotenv(".env")
 api_key = os.getenv("GROQ_API_KEY")
 
 # 2. Setup Groq Client
@@ -51,24 +54,25 @@ def normalize_material(raw_material: str):
 @app.post("/analyze")
 async def analyze_trash(file: UploadFile = File(...)):
     print(f"📩 Received image: {file.filename}")
+    started_at = time.perf_counter()
 
     image_bytes = await file.read()
     base64_image = base64.b64encode(image_bytes).decode('utf-8')
 
     prompt_text = """
-    Analyze this image carefully. Identify the item and its properties.
-    Output ONLY valid JSON with no extra text or markdown:
-    {
-        "item_name": "Short descriptive name",
-        "material": "Primary material",
-        "state": "Condition (e.g. Clean, Dirty, Crushed, Intact)",
-        "quality": "Quality level (Good / Fair / Poor)",
-        "quantity": "Estimated quantity (e.g. 1 unit, ~500ml)",
-        "recyclable": true or false,
-        "action": "Short recommended disposal or recycling action",
-        "upcyclable": true or false
-    }
-    """
+Return ONLY valid JSON (no markdown):
+{
+  "item_name": "short name",
+  "material": "main material",
+  "state": "clean/dirty/crushed/intact",
+  "quality": "Good/Fair/Poor",
+  "quantity": "short estimate",
+  "recyclable": true,
+  "action": "one short disposal tip",
+  "upcyclable": false
+}
+Be concise.
+"""
 
     try:
         response = client.chat.completions.create(
@@ -85,7 +89,7 @@ async def analyze_trash(file: UploadFile = File(...)):
             ],
             model="meta-llama/llama-4-scout-17b-16e-instruct",
             temperature=0,
-            max_tokens=600
+            max_tokens=220
         )
 
         content = response.choices[0].message.content
@@ -139,7 +143,8 @@ async def analyze_trash(file: UploadFile = File(...)):
             data["material_category"] = normalize_material(data.get("material", ""))
             data["confidence"]        = "Medium"
 
-        print(f"✅ Analyzed: {data.get('item_name')} → {data.get('material_category')}")
+        elapsed = time.perf_counter() - started_at
+        print(f"✅ Analyzed: {data.get('item_name')} → {data.get('material_category')} in {elapsed:.2f}s")
         return data
 
     except Exception as e:
@@ -266,4 +271,4 @@ Provide 2-3 practical swap options. Be specific.
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

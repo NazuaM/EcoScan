@@ -69,7 +69,7 @@ class _SwapScreenState extends State<SwapScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text("🌿 Eco-Friendly Swaps",
+        title: const Text("Eco-Friendly Swaps",
             style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF00897B),
         foregroundColor: Colors.white,

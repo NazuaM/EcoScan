@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'auth_screen.dart';
@@ -53,7 +53,7 @@ class ProfileScreen extends StatelessWidget {
                             border: Border.all(color: Colors.white38, width: 2)),
                         child: Center(
                           child: Text(
-                            isGuest ? "👤" : (user?.displayName?.isNotEmpty == true
+                            isGuest ? "ðŸ‘¤" : (user?.displayName?.isNotEmpty == true
                                 ? user!.displayName![0].toUpperCase() : "?"),
                             style: const TextStyle(fontSize: 32, color: Colors.white),
                           ),
@@ -96,11 +96,11 @@ class ProfileScreen extends StatelessWidget {
                           children: [
                             // Stats row
                             Row(children: [
-                              Expanded(child: _statCard("🌱", "$score", "Total Points")),
+                              Expanded(child: _statCard("ðŸŒ±", "$score", "Total Points")),
                               const SizedBox(width: 12),
-                              Expanded(child: _statCard("🔍", "$scans", "Items Scanned")),
+                              Expanded(child: _statCard("ðŸ”", "$scans", "Items Scanned")),
                               const SizedBox(width: 12),
-                              Expanded(child: _statCard("♻️",
+                              Expanded(child: _statCard("â™»ï¸",
                                   "${(score / 10).floor()}", "Recycled")),
                             ]),
 
@@ -159,11 +159,11 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _levelCard(int score) {
     final levels = [
-      {"min": 0,   "max": 49,  "name": "Eco Beginner",   "emoji": "🌱", "color": Colors.green[200]},
-      {"min": 50,  "max": 149, "name": "Green Explorer",  "emoji": "🌿", "color": Colors.green[400]},
-      {"min": 150, "max": 299, "name": "Eco Warrior",     "emoji": "♻️", "color": Colors.green[600]},
-      {"min": 300, "max": 499, "name": "Planet Guardian", "emoji": "🌍", "color": Colors.teal[600]},
-      {"min": 500, "max": 9999,"name": "EcoScan Legend",  "emoji": "🏆", "color": Colors.amber[700]},
+      {"min": 0,   "max": 49,  "name": "Eco Beginner",   "emoji": "ðŸŒ±", "color": Colors.green[200]},
+      {"min": 50,  "max": 149, "name": "Green Explorer",  "emoji": "ðŸŒ¿", "color": Colors.green[400]},
+      {"min": 150, "max": 299, "name": "Eco Warrior",     "emoji": "â™»ï¸", "color": Colors.green[600]},
+      {"min": 300, "max": 499, "name": "Planet Guardian", "emoji": "ðŸŒ", "color": Colors.teal[600]},
+      {"min": 500, "max": 9999,"name": "EcoScan Legend",  "emoji": "ðŸ†", "color": Colors.amber[700]},
     ];
 
     final level = levels.lastWhere((l) => score >= (l['min'] as int), orElse: () => levels[0]);
@@ -217,12 +217,12 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _badgesSection(int score, int scans) {
     final badges = [
-      {"emoji": "🔍", "name": "First Scan",   "desc": "Complete your first scan", "earned": scans >= 1},
-      {"emoji": "📦", "name": "5 Scans",      "desc": "Scan 5 items",             "earned": scans >= 5},
-      {"emoji": "♻️", "name": "Recycler",     "desc": "Earn 50 points",           "earned": score >= 50},
-      {"emoji": "🌿", "name": "Eco Warrior",  "desc": "Earn 150 points",          "earned": score >= 150},
-      {"emoji": "🌍", "name": "Planet Saver", "desc": "Earn 300 points",          "earned": score >= 300},
-      {"emoji": "🏆", "name": "Legend",       "desc": "Earn 500 points",          "earned": score >= 500},
+      {"emoji": "ðŸ”", "name": "First Scan",   "desc": "Complete your first scan", "earned": scans >= 1},
+      {"emoji": "ðŸ“¦", "name": "5 Scans",      "desc": "Scan 5 items",             "earned": scans >= 5},
+      {"emoji": "â™»ï¸", "name": "Recycler",     "desc": "Earn 50 points",           "earned": score >= 50},
+      {"emoji": "ðŸŒ¿", "name": "Eco Warrior",  "desc": "Earn 150 points",          "earned": score >= 150},
+      {"emoji": "ðŸŒ", "name": "Planet Saver", "desc": "Earn 300 points",          "earned": score >= 300},
+      {"emoji": "ðŸ†", "name": "Legend",       "desc": "Earn 500 points",          "earned": score >= 500},
     ];
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -245,7 +245,7 @@ class ProfileScreen extends StatelessWidget {
                   color: earned ? Colors.green.shade300 : Colors.grey.shade200),
             ),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text(earned ? (b['emoji'] as String) : "🔒",
+              Text(earned ? (b['emoji'] as String) : "ðŸ”’",
                   style: TextStyle(fontSize: 28, color: earned ? null : Colors.grey[400])),
               const SizedBox(height: 4),
               Text(b['name'] as String,
@@ -265,7 +265,7 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
           color: Colors.white, borderRadius: BorderRadius.circular(20)),
       child: Column(children: [
-        const Text("👤", style: TextStyle(fontSize: 48)),
+        const Text("ðŸ‘¤", style: TextStyle(fontSize: 48)),
         const SizedBox(height: 12),
         const Text("You're using EcoScan as a guest",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -294,3 +294,4 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+
