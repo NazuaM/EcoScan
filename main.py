@@ -10,8 +10,7 @@ from groq import Groq
 from dotenv import load_dotenv
 
 # 1. Load Environment Variables
-# Prefer a dedicated backend env file, then fallback to root .env.
-load_dotenv(".env.backend")
+# Single shared environment file at workspace root.
 load_dotenv(".env")
 api_key = os.getenv("GROQ_API_KEY")
 
