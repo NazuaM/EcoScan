@@ -1,6 +1,6 @@
-﻿import 'dart:convert';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class TutorialScreen extends StatefulWidget {
@@ -27,15 +27,22 @@ class TutorialScreen extends StatefulWidget {
 
 class _TutorialScreenState extends State<TutorialScreen> {
   bool _isLoading = false;
+  bool _isImageLoading = false;
   Map<String, dynamic>? _tutorial;
+  Uint8List? _upcycledImageBytes;
   String _skillLevel = "Beginner";
   bool _tutorialClaimed = false;
 
-  String get _pollinationsApiKey {
-    final fromEnv = dotenv.env['POLLINATIONS_API_KEY']?.trim() ?? '';
-    if (fromEnv.isNotEmpty) return fromEnv;
+  String get _workerUrl {
     return const String.fromEnvironment(
-      'POLLINATIONS_API_KEY',
+      'UPCYCLER_IMAGE_WORKER_URL',
+      defaultValue: '',
+    );
+  }
+
+  String get _workerToken {
+    return const String.fromEnvironment(
+      'UPCYCLER_IMAGE_WORKER_TOKEN',
       defaultValue: '',
     );
   }
@@ -50,60 +57,79 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   String get baseUrl => widget.backendUrl.replaceAll('/analyze', '');
 
-  // â”€â”€ INSPIRATION IMAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Uses Pollinations image generation with prompt + deterministic seed.
-  // If unavailable, falls back to deterministic picsum and then emoji card.
-  int _stableSeed(String text) {
-    int seed = 0;
-    for (int i = 0; i < text.length; i++) {
-      seed = (seed * 31 + text.codeUnitAt(i)) & 0x7FFFFFFF;
-    }
-    seed = (seed % 100000) + 1;
-    return seed;
-  }
-
-  String _getInspirationImageUrl(String projectTitle) {
-    final seed = _stableSeed('$projectTitle|${widget.material}');
-    final lowerTitle = projectTitle.toLowerCase();
-    final sceneHint = lowerTitle.contains('holder')
-        ? 'desktop scene with stationery visible'
-        : 'single crafted object on a table';
-    final prompt =
-        'close-up product photo of a finished DIY upcycling result: $projectTitle, '
-        'made from ${widget.material}, $sceneHint, centered subject, realistic materials, '
-        'indoor lighting, high detail, no text, no watermark';
-    final encodedPrompt = Uri.encodeComponent(prompt);
-
-    final params = <String, String>{
-      'model': 'zimage',
-      'width': '1024',
-      'height': '1024',
-      'seed': '$seed',
-      'enhance': 'false',
-      'safe': 'true',
-      'negative_prompt':
-          'mountain, snow, landscape, scenery, sky, nature panorama, people, logo, watermark, text',
-    };
-    if (_pollinationsApiKey.isNotEmpty) {
-      params['key'] = _pollinationsApiKey;
+  Future<void> _loadUpcycledImage(String projectTitle) async {
+    if (_workerUrl.isEmpty) {
+      print('Worker URL is not configured. Set UPCYCLER_IMAGE_WORKER_URL.');
+      return;
     }
 
-    final query = Uri(queryParameters: params).query;
-    return 'https://gen.pollinations.ai/image/$encodedPrompt?$query';
+    if (mounted) {
+      setState(() {
+        _isImageLoading = true;
+        _upcycledImageBytes = null;
+      });
+    }
+
+    try {
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+      if (_workerToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $_workerToken';
+      }
+
+      final response = await http.post(
+        Uri.parse(_workerUrl),
+        headers: headers,
+        body: jsonEncode({
+          'prompt':
+              'Professional upcycling DIY result: $projectTitle, realistic photo',
+        }),
+      );
+
+      if (!mounted) return;
+
+      print('Worker Response Status: ${response.statusCode}');
+      print('Response Content-Type: ${response.headers['content-type']}');
+      print('Response Body Length: ${response.bodyBytes.length}');
+      
+      // Log first 50 bytes to see what we're actually getting
+      if (response.bodyBytes.isNotEmpty) {
+        final firstBytes = response.bodyBytes.take(50).toList();
+        print('First 50 bytes: $firstBytes');
+        final firstString = String.fromCharCodes(firstBytes);
+        print('First bytes as string: $firstString');
+      }
+
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        setState(() => _upcycledImageBytes = response.bodyBytes);
+        print('✓ Image bytes stored successfully');
+      } else {
+        print(
+          'Image Worker Error: HTTP ${response.statusCode}, body length: ${response.bodyBytes.length}',
+        );
+      }
+    } catch (e) {
+      print('Error loading image from Worker: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isImageLoading = false);
+      }
+    }
   }
 
   // Emoji fallback card shown if image fails to load
   String _inspirationEmoji() {
     final m = widget.material.toLowerCase();
-    if (m.contains('plastic')) return 'ðŸ§´';
-    if (m.contains('glass')) return 'ðŸ¾';
-    if (m.contains('paper') || m.contains('cardboard')) return 'ðŸ“¦';
-    if (m.contains('metal') || m.contains('aluminum')) return 'ðŸ¥«';
-    if (m.contains('wood')) return 'ðŸªµ';
-    if (m.contains('fabric') || m.contains('textile')) return 'ðŸ§µ';
-    if (m.contains('electronic')) return 'ðŸ”Œ';
-    if (m.contains('rubber')) return 'âš™ï¸';
-    return 'ðŸ› ï¸';
+    if (m.contains('plastic')) return '';
+    if (m.contains('glass')) return '';
+    if (m.contains('paper') || m.contains('cardboard')) return '';
+    if (m.contains('metal') || m.contains('aluminum')) return '';
+    if (m.contains('wood')) return '';
+    if (m.contains('fabric') || m.contains('textile')) return '';
+    if (m.contains('electronic')) return '';
+    if (m.contains('rubber')) return '';
+    return '';
   }
 
   Widget _buildInspirationFallback(String title) {
@@ -127,7 +153,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     fontSize: 17, fontWeight: FontWeight.bold,
                     color: Color(0xFF4E342E))),
             const SizedBox(height: 6),
-            Text('${widget.material} â€¢ upcycling project',
+            Text('${widget.material}  upcycling project',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 12, color: Color(0xFF6D4C41))),
           ]),
@@ -136,31 +162,31 @@ class _TutorialScreenState extends State<TutorialScreen> {
     );
   }
 
-  // â”€â”€ IMAGE WIDGET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Tries generated image first, then local emoji fallback card.
+  //  IMAGE WIDGET 
+  // Shows worker-generated bytes when available, fallback card otherwise.
   Widget _buildInspirationImage(String projectTitle) {
-    final imageUrl = _getInspirationImageUrl(projectTitle);
+    final imageBytes = _upcycledImageBytes;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: AspectRatio(
         aspectRatio: 16 / 9,
         child: Stack(fit: StackFit.expand, children: [
-          // Primary: Pollinations generated image
-          Image.network(
-            imageUrl,
-            fit: BoxFit.cover,
-            loadingBuilder: (ctx, child, progress) {
-              if (progress == null) return child;
-              return Container(
-                color: Colors.orange[50],
-                child: Center(
-                  child: CircularProgressIndicator(
-                      color: Colors.orange[700], strokeWidth: 2)),
-              );
-            },
-            errorBuilder: (ctx, err, st) =>
-                _buildInspirationFallback(projectTitle),
-          ),
+          if (imageBytes != null)
+            Image.memory(
+              imageBytes,
+              fit: BoxFit.cover,
+              width: double.infinity,
+            )
+          else
+            _buildInspirationFallback(projectTitle),
+          if (_isImageLoading)
+            Container(
+              color: Colors.black.withOpacity(0.15),
+              child: Center(
+                child: CircularProgressIndicator(
+                    color: Colors.orange[700], strokeWidth: 2),
+              ),
+            ),
           // Gradient overlay
           DecoratedBox(
             decoration: BoxDecoration(
@@ -183,7 +209,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 3),
-              Text("Visual reference only â€¢ not an exact result",
+              Text("Visual reference only  not an exact result",
                   style: TextStyle(
                       color: Colors.white.withOpacity(0.85), fontSize: 11)),
             ]),
@@ -206,9 +232,14 @@ class _TutorialScreenState extends State<TutorialScreen> {
     );
   }
 
-  // â”€â”€ TUTORIAL GENERATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  TUTORIAL GENERATION 
   Future<void> _generateTutorial() async {
-    setState(() { _isLoading = true; _tutorial = null; });
+    setState(() {
+      _isLoading = true;
+      _tutorial = null;
+      _upcycledImageBytes = null;
+      _isImageLoading = false;
+    });
 
     final selectedTools = _tools.entries
         .where((e) => e.value).map((e) => e.key.toLowerCase()).toList();
@@ -227,7 +258,12 @@ class _TutorialScreenState extends State<TutorialScreen> {
         }),
       );
       if (response.statusCode == 200) {
-        setState(() => _tutorial = json.decode(response.body));
+        final tutorialData = json.decode(response.body) as Map<String, dynamic>;
+        setState(() => _tutorial = tutorialData);
+
+        final projectTitle =
+            (tutorialData['project_title'] ?? widget.itemName).toString();
+        await _loadUpcycledImage(projectTitle);
       } else {
         _showError("Server error: ${response.statusCode}");
       }
@@ -244,7 +280,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     setState(() => _tutorialClaimed = true);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("ðŸŒ± +20 pts â€” Tutorial completed!"),
+        content: Text(" +20 pts  Tutorial completed!"),
         backgroundColor: Color(0xFF2E7D32),
       ));
     }
@@ -255,13 +291,13 @@ class _TutorialScreenState extends State<TutorialScreen> {
         SnackBar(content: Text(msg), backgroundColor: Colors.red[700]));
   }
 
-  // â”€â”€ BUILD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  BUILD 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text("ðŸ› ï¸ DIY Tutorial",
+        title: const Text(" DIY Tutorial",
             style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.orange[700],
         foregroundColor: Colors.white,
@@ -294,7 +330,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   Text(widget.itemName,
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 15)),
-                  Text("${widget.material} â€¢ ${widget.state}",
+                  Text("${widget.material}  ${widget.state}",
                       style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                 ])),
               ]),
@@ -380,9 +416,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                 )
               else ...[
 
-                // â”€â”€ Inspiration image (generated + fallback chain) â”€â”€
+                //  Inspiration image (generated + fallback chain) 
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text("âœ¨ Inspiration",
+                  const Text(" Inspiration",
                       style: TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 8),
@@ -403,7 +439,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    const Text("ðŸŽ¨ PROJECT",
+                    const Text(" PROJECT",
                         style: TextStyle(
                             color: Colors.white70, fontSize: 11,
                             letterSpacing: 1.5)),
@@ -427,7 +463,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
                 // What you need
                 _sectionCard(
-                  title: "ðŸ§° What You Need",
+                  title: " What You Need",
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -457,7 +493,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
                 // Steps
                 _sectionCard(
-                  title: "ðŸ“‹ Step-by-Step",
+                  title: " Step-by-Step",
                   child: Column(
                     children: (_tutorial!['steps'] as List? ?? [])
                         .asMap()
@@ -516,7 +552,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.green.shade200)),
                     child: Row(children: [
-                      const Text("ðŸŒ",
+                      const Text("",
                           style: TextStyle(fontSize: 24)),
                       const SizedBox(width: 10),
                       Expanded(
@@ -539,7 +575,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                 if ((_tutorial!['tips'] as List?)?.isNotEmpty == true) ...[
                   const SizedBox(height: 12),
                   _sectionCard(
-                    title: "ðŸ’¡ Tips",
+                    title: " Tips",
                     child: Column(
                         children: _bulletList(
                             _tutorial!['tips'] as List)),
@@ -645,7 +681,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
               child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                Text("â€¢ ",
+                Text(" ",
                     style: TextStyle(
                         color: Colors.orange[700],
                         fontWeight: FontWeight.bold)),

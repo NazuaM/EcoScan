@@ -295,7 +295,7 @@ class _SwapScreenState extends State<SwapScreen> {
                       if (swap['estimated_co2_saving'] != null) ...[
                         const SizedBox(height: 6),
                         _swapRow(Icons.cloud_outlined,
-                            Colors.green, "CO₂ saving",
+                            Colors.green, "CO saving",
                             swap['estimated_co2_saving'].toString()),
                       ],
                       if (swap['where_to_buy'] != null) ...[

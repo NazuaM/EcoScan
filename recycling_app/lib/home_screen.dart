@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Color get resultColor =>
       isRecyclable ? const Color(0xFF2E7D32) : Colors.red[700]!;
 
-  // â”€â”€ FIRESTORE POINTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  FIRESTORE POINTS 
   Future<void> _addPoints(int pts, String reason) async {
     if (isGuest) return;
     final ref = FirebaseFirestore.instance
@@ -68,8 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Row(children: [
-          const Text("ðŸŒ± "),
-          Text("+$pts pts  â€¢  $reason",
+          const Text(" "),
+          Text("+$pts pts    $reason",
               style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
         backgroundColor: const Color(0xFF2E7D32),
@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // â”€â”€ IMAGE PICKER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  IMAGE PICKER 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
@@ -170,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // â”€â”€ UPLOAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  UPLOAD 
   Future<void> _uploadImage(XFile file) async {
     setState(() => _isLoading = true);
     try {
@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // â”€â”€ CONFIDENCE DIALOG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  CONFIDENCE DIALOG 
   Future<void> _showConfirmationDialog() async {
     final materialOptions = [
       safeValue('material'),
@@ -317,7 +317,7 @@ class _HomeScreenState extends State<HomeScreen> {
         content: Text(msg), backgroundColor: Colors.red[700]));
   }
 
-  // â”€â”€ NAVIGATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  NAVIGATION 
   void _openTutorial() {
     Navigator.push(
         context,
@@ -350,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
-  // â”€â”€ RECYCLING CENTERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  RECYCLING CENTERS 
   Future<void> _showLocations() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -498,7 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("â™»ï¸ Nearby for $material",
+              Text(" Nearby for $material",
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
               Text("${centers.length} center(s) within 50km",
@@ -558,7 +558,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                           ]),
                           subtitle: Text(
-                              "${c['type']} â€¢ ${(c['dist'] as double).toStringAsFixed(1)} km",
+                              "${c['type']}  ${(c['dist'] as double).toStringAsFixed(1)} km",
                               style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 12)),
@@ -579,7 +579,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // â”€â”€ MAIN UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  MAIN UI 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -595,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
               titlePadding:
                   const EdgeInsets.fromLTRB(20, 0, 20, 16),
               title: Row(children: [
-                const Text("EcoScan â™»ï¸",
+                const Text("EcoScan ",
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -621,7 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white24,
                               borderRadius:
                                   BorderRadius.circular(20)),
-                          child: Text("ðŸŒ± $score pts",
+                          child: Text(" $score pts",
                               style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
@@ -639,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                           color: Colors.white24,
                           borderRadius: BorderRadius.circular(20)),
-                      child: const Text("ðŸ‘¤ Guest",
+                      child: const Text(" Guest",
                           style: TextStyle(
                               fontSize: 13,
                               color: Colors.white70)),
@@ -677,8 +677,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       BorderRadius.circular(20)),
                               child: Text(
                                   isRecyclable
-                                      ? "â™»ï¸ Recyclable"
-                                      : "ðŸš« Not Recyclable",
+                                      ? " Recyclable"
+                                      : " Not Recyclable",
                                   style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -761,8 +761,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           fontSize: 17)),
                                   Text(
                                       isRecyclable
-                                          ? "This item is recyclable âœ…"
-                                          : "This item is not recyclable âŒ",
+                                          ? "This item is recyclable "
+                                          : "This item is not recyclable ",
                                       style: TextStyle(
                                           color: resultColor,
                                           fontSize: 13)),
@@ -772,15 +772,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(children: [
-                            _detailRow("ðŸ§ª Material",
+                            _detailRow(" Material",
                                 safeValue('material')),
                             _detailRow(
-                                "ðŸ“¦ State", safeValue('state')),
+                                " State", safeValue('state')),
                             _detailRow(
-                                "â­ Quality", safeValue('quality')),
-                            _detailRow("ðŸ”¢ Quantity",
+                                " Quality", safeValue('quality')),
+                            _detailRow(" Quantity",
                                 safeValue('quantity')),
-                            _detailRow("ðŸŽ¯ Confidence",
+                            _detailRow(" Confidence",
                                 safeValue('confidence')),
                             const SizedBox(height: 10),
                             Container(
@@ -925,7 +925,7 @@ class _HomeScreenState extends State<HomeScreen> {
             border: Border.all(
                 color: Colors.green.shade100, width: 2)),
         child: const Center(
-            child: Text("â™»ï¸", style: TextStyle(fontSize: 52))),
+            child: Text("", style: TextStyle(fontSize: 52))),
       ),
       const SizedBox(height: 20),
       const Text("Ready to scan!",
@@ -944,10 +944,10 @@ class _HomeScreenState extends State<HomeScreen> {
           runSpacing: 8,
           alignment: WrapAlignment.center,
           children: [
-            _featurePill("ðŸ” AI Detection"),
-            _featurePill("ðŸ› ï¸ DIY Tutorials"),
-            _featurePill("ðŸŒ¿ Eco Swaps"),
-            _featurePill("ðŸ“ Find Centers"),
+            _featurePill(" AI Detection"),
+            _featurePill(" DIY Tutorials"),
+            _featurePill(" Eco Swaps"),
+            _featurePill(" Find Centers"),
           ]),
     ]);
   }

@@ -1,4 +1,4 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -42,7 +42,7 @@ class _AuthScreenState extends State<AuthScreen>
     super.dispose();
   }
 
-  // â”€â”€ Email/Password Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Email/Password Auth 
   Future<void> _submitEmailAuth() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -69,7 +69,7 @@ class _AuthScreenState extends State<AuthScreen>
     }
   }
 
-  // â”€â”€ Google Sign In â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Google Sign In 
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
@@ -148,7 +148,7 @@ class _AuthScreenState extends State<AuthScreen>
     }
   }
 
-  // â”€â”€â”€ UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  UI 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -176,7 +176,7 @@ class _AuthScreenState extends State<AuthScreen>
                     border: Border.all(color: Colors.white30, width: 2),
                   ),
                   child: const Center(
-                    child: Text("â™»ï¸", style: TextStyle(fontSize: 44)),
+                    child: Text("", style: TextStyle(fontSize: 44)),
                   ),
                 ),
 
