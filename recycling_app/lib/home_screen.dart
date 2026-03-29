@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
 
   // Local backend for desktop/laptop runs
-  final String backendUrl = "http://127.0.0.1:8000/analyze";
+  final String backendUrl = "https://ecoscan-backend-1zt5.onrender.com/analyze";
   String get baseUrl => backendUrl.replaceAll('/analyze', '');
 
   User? get currentUser => FirebaseAuth.instance.currentUser;

@@ -27,6 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/")
+async def root_health():
+    return {"message": "EcoScan Backend API", "status": "ok"}
+
 # ─────────────────────────────────────────────
 # HELPER: MATERIAL NORMALIZER
 # ─────────────────────────────────────────────

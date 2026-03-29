@@ -78,7 +78,7 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
   bool _isLoading = false;
   int _score = 0;
 
-  final String backendUrl = "http://127.0.0.1:8000/analyze";
+  final String backendUrl = "https://ecoscan-backend-1zt5.onrender.com/analyze";
   String get baseUrl => backendUrl.replaceAll('/analyze', '');
 
   String safeValue(String key) {
@@ -246,7 +246,7 @@ class _RecyclingScreenState extends State<RecyclingScreen> {
       material: safeValue('material'),
       state: "Used", 
       quality: "Good",
-      backendUrl: "http://127.0.0.1:8000/analyze", // Your API base
+      backendUrl: "https://ecoscan-backend-1zt5.onrender.com/analyze", // Your API base
     )));
   }
 
