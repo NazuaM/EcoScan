@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <application
-        android:label="recycling_app"
+        android:label="EcoScan"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
