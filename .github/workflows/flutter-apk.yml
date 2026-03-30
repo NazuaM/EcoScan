@@ -39,7 +39,10 @@ jobs:
         run: flutter pub get
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release \
+            --dart-define=UPCYCLER_IMAGE_WORKER_URL=${{ secrets.UPCYCLER_IMAGE_WORKER_URL }} \
+            --dart-define=UPCYCLER_IMAGE_WORKER_TOKEN=${{ secrets.UPCYCLER_IMAGE_WORKER_TOKEN }}
 
       - name: Extract APK certificate fingerprint
         run: |
