@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -587,22 +588,47 @@ class _TutorialScreenState extends State<TutorialScreen> {
                 // Claim points
                 if (!_tutorialClaimed &&
                     widget.onTutorialCompleted != null)
-                  ElevatedButton.icon(
-                    onPressed: _claimPoints,
-                    icon: const Icon(Icons.stars_rounded),
-                    label:
-                        const Text("I completed this! Claim +20 pts"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
-                      foregroundColor: Colors.white,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      textStyle: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final user = FirebaseAuth.instance.currentUser;
+                      final isGuest = user?.isAnonymous ?? true;
+
+                      return Column(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: isGuest ? null : _claimPoints,
+                            icon: const Icon(Icons.stars_rounded),
+                            label: Text(
+                              isGuest
+                                  ? "Sign in to claim points"
+                                  : "I completed this! Claim +20 pts",
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isGuest
+                                  ? Colors.grey[400]
+                                  : const Color(0xFF2E7D32),
+                              foregroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          if (isGuest) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              "Create an account to earn and track points",
+                              style: TextStyle(
+                                  color: Colors.grey[600], fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ],
+                      );
+                    },
                   )
                 else if (_tutorialClaimed)
                   Container(

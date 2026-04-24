@@ -20,7 +20,10 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGuest = user?.isAnonymous ?? true;
+    final currentUser = user;
+    final isGuest = currentUser?.isAnonymous ?? true;
+    final displayName = currentUser?.displayName;
+    final email = currentUser?.email;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -53,20 +56,21 @@ class ProfileScreen extends StatelessWidget {
                             border: Border.all(color: Colors.white38, width: 2)),
                         child: Center(
                           child: Text(
-                            isGuest ? "" : (user?.displayName?.isNotEmpty == true
-                                ? user!.displayName![0].toUpperCase() : "?"),
+                            isGuest ? "" : ((displayName?.isNotEmpty == true)
+                                ? displayName![0].toUpperCase()
+                                : "?"),
                             style: const TextStyle(fontSize: 32, color: Colors.white),
                           ),
                         ),
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        isGuest ? "Guest User" : (user?.displayName ?? "EcoWarrior"),
+                        isGuest ? "Guest User" : (displayName ?? "EcoWarrior"),
                         style: const TextStyle(color: Colors.white,
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      if (!isGuest && user?.email != null)
-                        Text(user!.email!,
+                      if (!isGuest && email != null)
+                        Text(email,
                             style: const TextStyle(color: Colors.white70, fontSize: 13)),
                     ],
                   ),
@@ -80,14 +84,53 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: isGuest
                   ? _guestPrompt(context)
-                  : StreamBuilder<DocumentSnapshot>(
+                  : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                       stream: FirebaseFirestore.instance
                           .collection('users').doc(user!.uid).snapshots(),
                       builder: (ctx, snap) {
-                        if (!snap.hasData) {
-                          return const Center(child: CircularProgressIndicator());
+                        if (snap.hasError) {
+                          return _profileIssueCard(
+                            context,
+                            title: 'Error loading profile',
+                            message: snap.error.toString(),
+                            icon: Icons.error_outline,
+                            iconColor: Colors.red,
+                          );
                         }
-                        final data = snap.data!.data() as Map<String, dynamic>? ?? {};
+
+                        if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+
+                        if (!snap.data!.exists) {
+                          return _profileIssueCard(
+                            context,
+                            title: 'Profile not found',
+                            message: 'Your account document is missing in Firestore.',
+                            icon: Icons.person_off,
+                            iconColor: Colors.orange,
+                            actionLabel: 'Create Profile',
+                            onAction: () async {
+                              final currentUser = user;
+                              if (currentUser == null) return;
+                              await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set({
+                                'name': currentUser.displayName ?? 'User',
+                                'email': currentUser.email,
+                                'score': 0,
+                                'scans': 0,
+                                'joinedAt': FieldValue.serverTimestamp(),
+                                'badges': [],
+                              });
+                            },
+                          );
+                        }
+
+                        final data = snap.data!.data() ?? {};
                         final score = data['score'] ?? 0;
                         final scans = data['scans'] ?? 0;
 
@@ -135,6 +178,62 @@ class ProfileScreen extends StatelessWidget {
                     ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileIssueCard(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required IconData icon,
+    required Color iconColor,
+    String? actionLabel,
+    Future<void> Function()? onAction,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: iconColor.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: iconColor, size: 30),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(message, style: TextStyle(color: Colors.grey[700])),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 14),
+            ElevatedButton(
+              onPressed: () async {
+                await onAction();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2E7D32),
+                foregroundColor: Colors.white,
+              ),
+              child: Text(actionLabel),
+            ),
+          ],
         ],
       ),
     );

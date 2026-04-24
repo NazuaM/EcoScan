@@ -134,7 +134,17 @@ class _AuthScreenState extends State<AuthScreen>
     if (_isLoading) return;
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.signInAnonymously();
+      final cred = await FirebaseAuth.instance.signInAnonymously();
+      if (cred.user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(cred.user!.uid).set({
+          'name': 'Guest User',
+          'email': null,
+          'score': 0,
+          'scans': 0,
+          'joinedAt': FieldValue.serverTimestamp(),
+          'badges': [],
+        });
+      }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'operation-not-allowed') {
         _showError('Guest sign-in is disabled in Firebase Console.');
