@@ -4,9 +4,11 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart'
+  show SystemSound, SystemSoundType, rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'tutorial_screen.dart';
@@ -20,9 +22,50 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const String _streakKey = 'daily_streak_current';
+  static const String _bestStreakKey = 'daily_streak_best';
+  static const String _lastCompletedDateKey = 'daily_streak_last_completed';
+
+  static const List<String> _dailyChallenges = [
+    'Carry a reusable bottle all day.',
+    'Refuse at least one single-use plastic item.',
+    'Recycle three items before bedtime.',
+    'Take a shorter shower to save water.',
+    'Use a reusable bag for any shopping today.',
+    'Choose one meal with less packaging waste.',
+    'Turn off lights when leaving every room today.',
+    'Reuse one container instead of throwing it away.',
+    'Walk for one short trip instead of driving.',
+    'Share one eco tip with a friend today.',
+    'Sort your waste before disposal today.',
+    'Skip disposable cutlery for all meals today.',
+    'Unplug unused chargers for the whole day.',
+    'Repurpose one item you planned to throw away.',
+    'Check one product label for recyclable packaging.',
+  ];
+
+  static const List<String> _didYouKnowFacts = [
+    'Did you know? Recycling one aluminum can saves enough energy to run a TV for hours.',
+    'Did you know? Reusing items usually saves more resources than recycling alone.',
+    'Did you know? Reducing food waste can lower your carbon footprint significantly.',
+    'Did you know? Clean and dry recyclables are more likely to be processed correctly.',
+    'Did you know? Small daily eco habits add up to major yearly impact.',
+    'Did you know? Refusing unnecessary packaging prevents waste at the source.',
+    'Did you know? Extending a product life by just a few months reduces emissions.',
+    'Did you know? Choosing refill options cuts plastic waste over time.',
+    'Did you know? Repairing instead of replacing helps reduce landfill growth.',
+    'Did you know? Local recycling rules matter, always sort materials correctly.',
+  ];
+
   Uint8List? _imageBytes;
   Map<String, dynamic>? _data;
   bool _isLoading = false;
+  bool _challengeLoading = true;
+  int _currentStreak = 0;
+  int _bestStreak = 0;
+  String? _lastCompletedDate;
+  String _todayChallenge = '';
+  String _todayFact = '';
 
   // Local backend for desktop/laptop runs
   final String backendUrl = "https://ecoscan-backend-1zt5.onrender.com/analyze";
@@ -30,6 +73,304 @@ class _HomeScreenState extends State<HomeScreen> {
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
   bool get isGuest => currentUser?.isAnonymous ?? true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeDailyChallenge();
+  }
+
+  String _toDateKey(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  DateTime? _parseDateKey(String? value) {
+    if (value == null || value.isEmpty) return null;
+    try {
+      return DateTime.parse(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _initializeDailyChallenge() async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final daySeed = DateTime(now.year, now.month, now.day)
+            .millisecondsSinceEpoch ~/
+        Duration.millisecondsPerDay;
+    final challengeIndex = daySeed % _dailyChallenges.length;
+    final factIndex = daySeed % _didYouKnowFacts.length;
+
+    setState(() {
+      _currentStreak = prefs.getInt(_streakKey) ?? 0;
+      _bestStreak = prefs.getInt(_bestStreakKey) ?? 0;
+      _lastCompletedDate = prefs.getString(_lastCompletedDateKey);
+      _todayChallenge = _dailyChallenges[challengeIndex];
+      _todayFact = _didYouKnowFacts[factIndex];
+      _challengeLoading = false;
+    });
+  }
+
+  Future<void> _completeTodayChallenge() async {
+    final today = _toDateKey(DateTime.now());
+
+    if (_lastCompletedDate == today) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You already completed today\'s challenge!'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final yesterday = _toDateKey(now.subtract(const Duration(days: 1)));
+
+    int nextStreak;
+    if (_lastCompletedDate == yesterday) {
+      nextStreak = _currentStreak + 1;
+    } else {
+      nextStreak = 1;
+    }
+
+    final nextBest = math.max(_bestStreak, nextStreak);
+
+    await prefs.setString(_lastCompletedDateKey, today);
+    await prefs.setInt(_streakKey, nextStreak);
+    await prefs.setInt(_bestStreakKey, nextBest);
+
+    if (!mounted) return;
+    setState(() {
+      _lastCompletedDate = today;
+      _currentStreak = nextStreak;
+      _bestStreak = nextBest;
+    });
+
+    if (!isGuest) {
+      await _addPoints(5, 'Daily challenge completed!');
+    }
+
+    if (!mounted) return;
+    _playChallengeSound(nextStreak);
+
+    if (!mounted) return;
+    await _showDailyChallengeCelebration(nextStreak);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Nice! Streak is now $_currentStreak day(s).'),
+        backgroundColor: const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _playChallengeSound(int streak) {
+    final isMilestone = streak == 3 || streak == 7 || streak == 14 || streak == 30;
+    if (isMilestone) {
+      SystemSound.play(SystemSoundType.alert);
+    } else {
+      SystemSound.play(SystemSoundType.click);
+    }
+  }
+
+  Future<void> _showDailyChallengeCelebration(int streak) async {
+    final isMilestone = streak == 3 || streak == 7 || streak == 14 || streak == 30;
+    final title = isMilestone ? 'Milestone reached!' : 'Challenge completed!';
+    final subtitle = isMilestone
+        ? 'You reached a $streak-day sustainability streak.'
+        : 'Great work. Your streak is now $streak day(s).';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E7D32).withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.local_fire_department, color: Color(0xFF2E7D32)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(subtitle, style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Keep going tomorrow to extend your streak.',
+                style: TextStyle(
+                  color: Colors.green[900],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Awesome'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyChallengeCard() {
+    if (_challengeLoading) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 10),
+            Text('Loading today\'s eco challenge...'),
+          ],
+        ),
+      );
+    }
+
+    final today = _toDateKey(DateTime.now());
+    final completedToday = _lastCompletedDate == today;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF2E7D32).withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E7D32),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Today\'s Eco Challenge',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Streak: $_currentStreak',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1B5E20),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _todayChallenge,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1B5E20),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _todayFact,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.green[800],
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: completedToday ? null : _completeTodayChallenge,
+                  icon: Icon(completedToday ? Icons.check : Icons.verified_outlined),
+                  label: Text(completedToday ? 'Completed Today' : 'I Did It Today'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Text(
+                  'Best: $_bestStreak',
+                  style: TextStyle(
+                    color: Colors.green[800],
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   String safeValue(String key) {
     if (_data == null || _data![key] == null) return "Unknown";
@@ -655,6 +996,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  _buildDailyChallengeCard(),
 
                   // Scanned image
                   if (_imageBytes != null) ...[

@@ -233,12 +233,30 @@ class SwapRequest(BaseModel):
     item: str   # e.g. "plastic wrap", "styrofoam cup"
 
 
+def _sanitize_swap_for_uae(swap: dict) -> dict:
+    """Force swap suggestions to remain region-appropriate for UAE demos."""
+    us_store_keywords = [
+        "target", "tj maxx", "tjmaxx", "walmart", "costco", "walgreens",
+        "cvs", "whole foods", "home depot", "lowe", "best buy", "kroger",
+    ]
+
+    where_to_buy = str(swap.get("where_to_buy", "")).strip()
+    lower_where = where_to_buy.lower()
+
+    if not where_to_buy or any(k in lower_where for k in us_store_keywords):
+        swap["where_to_buy"] = (
+            "Carrefour UAE, Lulu Hypermarket, Union Coop, Amazon.ae, Noon, or local eco stores in Dubai/Abu Dhabi"
+        )
+
+    return swap
+
+
 @app.post("/swap")
 async def get_eco_swap(req: SwapRequest):
     print(f"🌿 Swap request: {req.item}")
 
     prompt = f"""
-You are an eco-friendly product expert.
+You are an eco-friendly product expert in the UAE.
 The user wants to replace: "{req.item}"
 
 Respond with ONLY valid JSON, no extra text:
@@ -255,6 +273,10 @@ Respond with ONLY valid JSON, no extra text:
 }}
 
 Provide 2-3 practical swap options. Be specific.
+STRICT LOCATION RULES:
+- The user is in the United Arab Emirates (UAE).
+- Do not mention US-only stores or brands like Target, TJ Maxx, Walmart, Costco, Walgreens, CVS, Kroger, Home Depot, or Lowe's.
+- "where_to_buy" must be UAE-relevant, such as Carrefour UAE, Lulu Hypermarket, Union Coop, Spinneys UAE, Choithrams, Amazon.ae, Noon, ACE UAE, and local stores in Dubai/Abu Dhabi/Sharjah.
 """
 
     try:
@@ -267,7 +289,16 @@ Provide 2-3 practical swap options. Be specific.
 
         content = response.choices[0].message.content
         clean_content = content.replace("```json", "").replace("```", "").strip()
-        return json.loads(clean_content)
+        data = json.loads(clean_content)
+
+        swaps = data.get("swaps")
+        if isinstance(swaps, list):
+            data["swaps"] = [
+                _sanitize_swap_for_uae(s) if isinstance(s, dict) else s
+                for s in swaps
+            ]
+
+        return data
 
     except Exception as e:
         print(f"❌ Swap error: {e}")
